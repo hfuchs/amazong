@@ -1,0 +1,31 @@
+amazong - cron job to query Amazon prices
+============================================
+
+2012-04-10,
+Complete overhaul.  Moved credentials away to ~/.amazongrc, limited
+queries to 10 at-a-time, switched to reporting of lower prices only by
+default and introduced the 'full' switch that reproduces the old
+behaviour of simply printing the complete list of products and prices.
+Had to throw away all previous commits because of the in-code
+credentials that I used.  Just goes to show ya.
+
+Github-ready.
+
+2011-11-07, Turns out, the Associate ID thing comes with a new API and
+newer versions (than Debian's current .59) of Net::Amazon have me
+covered.  I installed a local version of it with
+
+    perl -MCPAN -Mlocal::lib -e 'use local::lib "~/local"; CPAN::install(Net::Amazon)'
+
+and added a 'use lib' to amazong.
+
+2011-03-29, Started.
+
+
+Requirements
+----------------
+
+Read a list of ASINs from a user-supplied config file.
+
+Query current Amazon prices (new & used) and ... TODO
+
