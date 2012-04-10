@@ -1,5 +1,5 @@
-amazong - cron job to query Amazon prices
-============================================
+amazong - Query Amazon prices, report on lower prices
+========================================================
 
 2012-04-10,
 Complete overhaul.  Moved credentials away to ~/.amazongrc, limited
