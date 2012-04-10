@@ -1,0 +1,113 @@
+#!/usr/bin/perl
+# 2012-04-10, Re-created by Hagen Fuchs <code@hfuchs.net>
+#
+# Purpose: Query Amazon for prices of products listed in the config
+# (~/.amazongrc) and compare them to historical prices saved in
+# a database (~/.amazong.db).
+
+# --- Pragmas & Modules
+use common::sense;
+use lib "$ENV{HOME}/local/lib/perl5";
+use open ':locale';
+
+use Getopt::Long;
+use Config::Tiny;  # Read ASINs from config file.
+use YAML::Tiny;    # Wanted to use BerkeleyDB but chickened out.
+use Try::Tiny;     # TODO Use pervasively.
+use List::Util qw(min);
+
+#  Older versions of Net::Amazon don't support the !$%! associate_tag.
+#use Net::Amazon 0.61;
+try {
+    require Net::Amazon;
+    die if $Net::Amazon::VERSION < 0.61;
+} catch {
+    say "Please install or upgrade to Net::Amazon (at least version 0.61).";
+    exit -1;
+};
+
+
+# --- Main
+# Parse options.
+my $full_report = 0;
+GetOptions(
+    'full'    => sub { $full_report++ },
+    'verbose' => sub { $full_report++ },
+    'report'  => sub { $full_report++ },
+);
+
+# Read config.
+my $cfg = Config::Tiny->read( "$ENV{HOME}/.amazongrc" );
+say "No config file.  Sorry 'bout that." if (not defined $cfg);
+
+my @asins = grep { /^[A-Z0-9]{10}/ } keys %{$cfg->{stuff}};
+my $ua = Net::Amazon->new(
+    token      => $cfg->{credentials}->{token},
+    secret_key => $cfg->{credentials}->{secret_key},
+    associate_tag => '1',
+    max_pages  => 1,
+    # retries_per_second?
+    locale     => $cfg->{credentials}->{locale},
+);
+
+# Open database.
+if (not -e -r "$ENV{HOME}/.amazong.db") {
+    open my $FH, "> $ENV{HOME}/.amazong.db" or die;
+    close $FH;
+}
+my $yaml = YAML::Tiny->read( "$ENV{HOME}/.amazong.db" );
+
+# Query Amazon (but only 10 items at a time).
+# TODO Everything here is unwieldy.
+while (my @list = splice @asins, 0, 10) {
+    my $response = $ua->search( asin => \@list );
+
+    if ( $response->is_success() ) {
+        foreach ( $response->properties ) {
+            # Get lowest historical prices.
+            my %lowest;
+            foreach my $i (qw(Used New Amazon)) {
+                $lowest{$i} =
+                    min map { $_->{$i} } values %{$yaml->[0]->{$_->Asin}};
+            }
+
+            # Save current prices.
+            my $time = time;
+            $yaml->[0]->{$_->Asin}->{$time}->{Amazon} = normalize_price($_->OurPrice);
+            $yaml->[0]->{$_->Asin}->{$time}->{New}    = normalize_price($_->ThirdPartyNewPrice);
+            $yaml->[0]->{$_->Asin}->{$time}->{Used}   = normalize_price($_->UsedPrice);
+
+            # Print.
+            # TODO Yes, the formatting is crude, the logic is /really/ crude.
+            #say $_->as_string();
+            if (
+                $full_report or
+                (defined $lowest{Amazon} and normalize_price($_->OurPrice) < $lowest{Amazon}) or
+                (defined $lowest{Used} and normalize_price($_->UsedPrice) < $lowest{Used}) or
+                (defined $lowest{New} and normalize_price($_->ThirdPartyNewPrice) < $lowest{New})
+            ) {
+                say $_->Title;
+                say "Amazon: ", normalize_price($_->OurPrice), " (lowest yet: ", defined $lowest{Amazon} ? $lowest{Amazon} : "-", ")";
+                say "Used: ", normalize_price($_->UsedPrice), " (lowest yet: ", defined $lowest{Used} ? $lowest{Used} : "-", ")";
+                say "New (3rd Party): ", normalize_price($_->ThirdPartyNewPrice), " (lowest yet: ", defined $lowest{New} ? $lowest{New} : "-", ")";
+                say "-"x50;
+            }
+        }
+    } else {
+        say "Error: ", $response->message(), "\n";
+    }
+}
+
+# Save new prices.
+$yaml->write("$ENV{HOME}/.amazong.db");
+
+
+# --- Subroutines
+sub normalize_price {
+    # Transform 'EUR 1.790,95' -> '1790.95' and '1,95' -> '1.95'.
+    my $_ = shift;
+    s|\.||;
+    s|(EUR\s*)?(\d+),(\d\d)|$2.$3|;
+    return $_;
+}
+
