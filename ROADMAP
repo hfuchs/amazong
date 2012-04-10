@@ -1,0 +1,5 @@
+0.4 Check for (and install) versions of Net::Amazon > 0.59
+0.3 Only report lower prices.
+0.2 Read credentials from file (gpg-agent?).
+0.1 Create Roadmap.
+
