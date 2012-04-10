@@ -1,0 +1,21 @@
+2010-10-20, Shamelessly copied from my own project HUnit.
+
+Testing
+--------
+
+Taken from ExtUtils::MakeMaker::FAQ:
+
+    make realclean
+    perl Makefile.PL INSTALL_BASE=/tmp
+    make install
+    export PERL5LIB=/tmp/lib/perl5
+    /tmp/bin/amazong
+
+Install
+---------
+
+perl Makefile.PL PREFIX=$HOME/local
+(make test)
+make install
+(make clean)
+
