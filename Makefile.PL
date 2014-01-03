@@ -4,7 +4,7 @@ WriteMakefile(
     NAME          => 'amazong',
     ABSTRACT      => 'Query Amazon for prices (new & used) of list of asins.',
     LICENSE       => 'perl',
-    AUTHOR        => 'Hagen Fuchs <hagen.fuchs@physik.tu-dresden.de>',
+    AUTHOR        => 'Hagen Fuchs <code@hfuchs.net>',
     # 2011-03-27, In the old days, I embedded version information in my
     # binary.  Nowadays, I just ask git.
     #VERSION_FROM  => 'bin/<+TODO+>',
