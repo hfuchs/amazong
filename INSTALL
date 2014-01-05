@@ -1,4 +1,7 @@
 2010-10-20, Shamelessly copied from my own project HUnit.
+2014-01-05, Changed `perl Makefile.PL` invocation below because of my
+definitions in ~/.bash_variables.
+
 
 Testing
 --------
@@ -14,7 +17,7 @@ Taken from ExtUtils::MakeMaker::FAQ:
 Install
 ---------
 
-perl Makefile.PL PREFIX=$HOME/local
+perl Makefile.PL INSTALL_BASE=$HOME/local
 (make test)
 make install
 (make clean)
